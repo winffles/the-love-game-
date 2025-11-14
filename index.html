@@ -1,0 +1,74 @@
+<!DOCTYPE html><html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Joguinho do Amor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7ecff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      color: #7a1fa2;
+    }
+    #gameBox {
+      margin-top: 20px;
+      width: 300px;
+      height: 300px;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    #btn {
+      padding: 10px 20px;
+      border: none;
+      background: #b34bff;
+      color: white;
+      border-radius: 10px;
+      cursor: pointer;
+      position: absolute;
+      transition: 0.2s;
+    }
+    #msg {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #7a1fa2;
+    }
+  </style>
+</head>
+<body>
+  <h1>Joguinho do Amor 💜</h1>
+  <p>Tenta clicar no botão...</p>  <div id="gameBox">
+    <button id="btn">Clique aqui!</button>
+  </div>  <div id="msg"></div>  <script>
+    const btn = document.getElementById("btn");
+    const msg = document.getElementById("msg");
+    const box = document.getElementById("gameBox");
+    let counter = 0;
+
+    btn.addEventListener("mouseover", () => {
+      const x = Math.random() * (box.clientWidth - 80);
+      const y = Math.random() * (box.clientHeight - 40);
+      btn.style.left = x + "px";
+      btn.style.top = y + "px";
+    });
+
+    btn.addEventListener("click", () => {
+      counter++;
+      if (counter >= 3) {
+        msg.innerHTML = "Parabéns, amor! 💜 Você desbloqueou a mensagem secreta: <br><br>‘3 meses ao seu lado e meu mundo só fica mais doce.’";
+        btn.style.display = "none";
+      }
+    });
+  </script></body>
+  </html>
