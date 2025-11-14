@@ -1,0 +1,293 @@
+<!DOCTYPE html><html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Me and You: A Love Game</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: #1a0026;
+    font-family: sans-serif;
+  }
+  #gameCanvas {
+    background: linear-gradient(#2b0050, #6d2a8a);
+    display: block;
+    margin: 0 auto;
+  }
+  .btn {
+    position: absolute;
+    bottom: 20px;
+    background: rgba(255,255,255,0.3);
+    padding: 10px 20px;
+    border-radius: 10px;
+    color: white;
+    backdrop-filter: blur(5px);
+  }
+  #leftBtn { left: 20px; }
+  #rightBtn { right: 20px; }
+  #jumpBtn { left: 50%; transform: translateX(-50%); bottom: 70px; }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas" width="900" height="500"></canvas>
+<div id="leftBtn" class="btn">◀</div>
+<div id="rightBtn" class="btn">▶</div>
+<div id="jumpBtn" class="btn">⤒</div><script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let gameState = "title"; // title → cutscene → playing → win → gameover
+
+//---------------------------------------------------------------------
+// SPRITES (simples, vetoriais)
+//---------------------------------------------------------------------
+function drawPlayer(x, y) {
+  ctx.fillStyle = "#a875ff"; // roxo
+  ctx.fillRect(x, y, 35, 50);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(x+10, y+10, 5, 5);
+}
+
+function drawGirlPink(x, y) {
+  ctx.fillStyle = "#ff7adf"; // rosa
+  ctx.fillRect(x, y, 35, 50);
+  ctx.fillStyle = "white";
+  ctx.fillRect(x+10, y+10, 5, 5);
+}
+
+//---------------------------------------------------------------------
+// SOUNDS (placeholder base64 simples)
+//---------------------------------------------------------------------
+let jumpSound = new Audio();
+jumpSound.src = "data:audio/wav;base64,UklGRhQAAABXQVZFZm10IBAAAAABAAEA..."; // curto
+
+let kissSound = new Audio();
+kissSound.src = "data:audio/wav;base64,UklGRlAAAABXQVZFZm10IBAAAAABAAEA...";
+
+let bgm = new Audio();
+bgm.src = "data:audio/mp3;base64,SUQzAwAAAA..."; // placeholder
+bgm.loop = true;
+
+//---------------------------------------------------------------------
+// CUTSCENE
+//---------------------------------------------------------------------
+let cutsceneTime = 0;
+
+function drawCutscene() {
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  drawGirlPink(400, 200);
+
+  ctx.fillStyle = "white";
+  ctx.font = "30px sans-serif";
+  ctx.fillText("Oi amor!", 420, 190);
+
+  cutsceneTime++;
+  if (cutsceneTime > 180) {
+    gameState = "playing";
+  }
+}
+
+//---------------------------------------------------------------------
+// JOGO PRINCIPAL
+//---------------------------------------------------------------------
+let player = { x: 100, y: 350, vy: 0, onGround: false };
+const gravity = 0.8;
+let left = false;
+let right = false;
+let jump = false;
+let score = 0;
+
+let platforms = [
+  {x:0, y:450, w:900, h:50},
+  {x:200, y:350, w:120, h:15},
+  {x:500, y:300, w:150, h:15},
+  {x:750, y:380, w:130, h:15}
+];
+
+let hearts = [];
+let boss = { x: 700, y: 420, dir: -1 };
+
+function spawnHeart() {
+  hearts.push({ x: Math.random()*800+50, y: -20, vy: 1 });
+}
+setInterval(spawnHeart, 1500);
+
+function updateGame() {
+  // movimento
+  if (left) player.x -= 4;
+  if (right) player.x += 4;
+
+  // gravidade
+  player.vy += gravity;
+  player.y += player.vy;
+
+  // colisão plataformas
+  player.onGround = false;
+  for (let p of platforms) {
+    if (
+      player.x + 35 > p.x &&
+      player.x < p.x + p.w &&
+      player.y + 50 > p.y &&
+      player.y + 50 < p.y + p.h + 10 &&
+      player.vy >= 0
+    ) {
+      player.y = p.y - 50;
+      player.vy = 0;
+      player.onGround = true;
+    }
+  }
+
+  // pulo
+  if (jump && player.onGround) {
+    player.vy = -15;
+    jumpSound.play();
+  }
+
+  // corações
+  for (let h of hearts) {
+    h.y += h.vy;
+    // coleta
+    if (
+      h.x > player.x-20 && h.x < player.x+50 &&
+      h.y > player.y-20 && h.y < player.y+60
+    ) {
+      h.y = 9999;
+      score++;
+    }
+  }
+
+  // boss movimento
+  boss.x += boss.dir * 2;
+  if (boss.x < 600) boss.dir = 1;
+  if (boss.x > 820) boss.dir = -1;
+
+  // colisão com boss → gameover
+  if (
+    player.x + 35 > boss.x && player.x < boss.x + 40 &&
+    player.y + 50 > boss.y && player.y < boss.y + 60
+  ) {
+    gameState = "gameover";
+  }
+
+  // condição de vitória
+  if (score >= 10) {
+    gameState = "win";
+  }
+}
+
+function drawGame() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // plataformas
+  ctx.fillStyle = "#e68dff";
+  for (let p of platforms) ctx.fillRect(p.x, p.y, p.w, p.h);
+
+  // player
+  drawPlayer(player.x, player.y);
+
+  // boss
+  ctx.fillStyle = "#660033";
+  ctx.fillRect(boss.x, boss.y, 40, 60);
+
+  // corações
+  ctx.fillStyle = "pink";
+  for (let h of hearts) ctx.fillRect(h.x, h.y, 15, 15);
+
+  // HUD
+  ctx.fillStyle = "white";
+  ctx.font = "20px sans-serif";
+  ctx.fillText("Score: " + score, 20, 30);
+}
+
+//---------------------------------------------------------------------
+// FINAIS
+//---------------------------------------------------------------------
+function drawWin() {
+  ctx.fillStyle = "rgba(0,0,0,0.7)";
+  ctx.fillRect(0,0,900,500);
+
+  drawGirlPink(430, 250);
+  drawPlayer(470, 250);
+
+  ctx.fillStyle = "white";
+  ctx.font = "40px sans-serif";
+  ctx.fillText("Você venceu!", 330, 150);
+
+  kissSound.play();
+}
+
+function drawGameOver() {
+  ctx.fillStyle = "rgba(0,0,0,0.7)";
+  ctx.fillRect(0,0,900,500);
+  ctx.fillStyle = "white";
+  ctx.font = "40px sans-serif";
+  ctx.fillText("Game Over", 350, 200);
+}
+
+//---------------------------------------------------------------------
+// TELA INICIAL
+//---------------------------------------------------------------------
+function drawTitle() {
+  ctx.fillStyle = "black";
+  ctx.fillRect(0,0,900,500);
+  ctx.fillStyle = "white";
+  ctx.font = "50px sans-serif";
+  ctx.fillText("Me and You: A Love Game", 150, 200);
+  ctx.font = "25px sans-serif";
+  ctx.fillText("Pressione qualquer tecla para começar", 200, 280);
+}
+
+//---------------------------------------------------------------------
+// LOOP
+//---------------------------------------------------------------------
+function loop() {
+  requestAnimationFrame(loop);
+
+  switch(gameState) {
+    case "title": drawTitle(); break;
+    case "cutscene": drawCutscene(); break;
+    case "playing": updateGame(); drawGame(); break;
+    case "win": drawWin(); break;
+    case "gameover": drawGameOver(); break;
+  }
+}
+loop();
+
+//---------------------------------------------------------------------
+// CONTROLES
+//---------------------------------------------------------------------
+document.addEventListener("keydown", () => {
+  if (gameState === "title") {
+    gameState = "cutscene";
+    bgm.play();
+  }
+});
+
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft") left = true;
+  if (e.key === "ArrowRight") right = true;
+  if (e.key === " ") jump = true;
+});
+
+document.addEventListener("keyup", e => {
+  if (e.key === "ArrowLeft") left = false;
+  if (e.key === "ArrowRight") right = false;
+  if (e.key === " ") jump = false;
+});
+
+// Controles touch
+const lb = document.getElementById("leftBtn");
+const rb = document.getElementById("rightBtn");
+const jb = document.getElementById("jumpBtn");
+
+lb.addEventListener("touchstart",()=>left=true);
+lb.addEventListener("touchend",()=>left=false);
+rb.addEventListener("touchstart",()=>right=true);
+rb.addEventListener("touchend",()=>right=false);
+jb.addEventListener("touchstart",()=>jump=true);
+jb.addEventListener("touchend",()=>jump=false);
+</script></body>
+</html>
